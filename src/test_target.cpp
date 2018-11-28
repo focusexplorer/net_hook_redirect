@@ -39,8 +39,8 @@ int main()
 	sockaddr_in serAddr;
 	serAddr.sin_family = AF_INET;
 	serAddr.sin_port = htons(80);
-	// inet_pton(AF_INET, "220.181.57.216", &serAddr.sin_addr);
-	inet_pton(AF_INET, "127.0.0.1", &serAddr.sin_addr);
+	 inet_pton(AF_INET, "220.181.57.216", &serAddr.sin_addr);
+	//inet_pton(AF_INET, "127.0.0.1", &serAddr.sin_addr);
     	while (true) 
 	{
 		SOCKET sclient = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -59,8 +59,8 @@ int main()
 		{
 			std::string sd;
 			sd.append("GET / HTTP/1.1\r\n");
-			//sd.append("Host: www.baidu.com\r\n");
-			sd.append("Host: localhost\r\n");
+			sd.append("Host: www.baidu.com\r\n");
+			//sd.append("Host: localhost\r\n");
 			sd.append("Connection: close\r\n\n");//close connection after get result
 			
 			if (!send_data(sclient, sd.c_str(), sd.size()))
