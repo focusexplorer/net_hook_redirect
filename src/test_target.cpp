@@ -33,8 +33,12 @@ int main()
 		HINSTANCE hinstLib; 
 		hinstLib = LoadLibrary(TEXT("hook_dll.dll")); 
 		FreeLibrary(hinstLib);
-		printf("&connect address=%X\n",connect);
-		printf("&FreeLibrary=%X\n",FreeLibrary);
+		printf("&connect address=%p\t%p\n",(PULONGLONG)connect,&connect);
+
+		printf("&FreeLibrary=%p\t%p\n",(PULONGLONG)FreeLibrary,&FreeLibrary);
+		printf("&send_data=%p\t%p\n",(PULONGLONG)send_data,&send_data);
+		int t=0;
+		printf("&t=%p\n",&t);
 	}
 	sockaddr_in serAddr;
 	serAddr.sin_family = AF_INET;

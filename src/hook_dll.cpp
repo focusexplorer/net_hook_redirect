@@ -17,25 +17,40 @@ HMODULE g_hModule;
     {
         char *pszDllName = (char *)((BYTE *)hMod + pImportDesc->Name);
         printf("\n 模块名称:%s\n", pszDllName);
-        // 一个IMAGE_THUNK_DATA 就是一个双字，它指定了一个导入函数
+        // 一个IMAGE_THUNK_DATA 就是一个unsigned long long，它指定了一个导入函数
         IMAGE_THUNK_DATA *pThunk = (IMAGE_THUNK_DATA *)((BYTE *)hMod + pImportDesc->OriginalFirstThunk);
         int n = 0;
-        {
-            DWORD dwOldProtect;
-            MEMORY_BASIC_INFORMATION mbi;
-            VirtualQuery(pThunk, &mbi, sizeof(mbi));
-            VirtualProtect(pThunk, sizeof(DWORD), PAGE_READWRITE, &dwOldProtect);
-            printf("%u=>%u\n",dwOldProtect, PAGE_READWRITE);
-            int a=dwOldProtect;
-        }
-        while (strcmp("WS2_32.dll",pszDllName)!=0 && pThunk->u1.Function)
-        { // 取得函数名称。hint/name 表项前2 个字节是函数序号，后面才是函数名称字符串
-            char *pszFunName = (char *)((BYTE *)hMod + (DWORD)pThunk->u1.AddressOfData + 2);
-            // 取得函数地址。IAT 表就是一个DWORD 类型的数组，每个成员记录一个函数的地址
-            PDWORD lpAddr = (DWORD *)((BYTE *)hMod + pImportDesc->FirstThunk) + n;
-            // 打印出函数名称和地址
-            printf("从此模块导入的函数：%-25s,", pszFunName);
-            printf("函数地址:%X\n", lpAddr);
+//        {
+//            DWORD dwOldProtect;
+//            MEMORY_BASIC_INFORMATION mbi;
+//            VirtualQuery(pThunk, &mbi, sizeof(mbi));
+//            VirtualProtect(pThunk, sizeof(DWORD), PAGE_READWRITE, &dwOldProtect);
+//            printf("%u=>%u\n",dwOldProtect, PAGE_READWRITE);
+//            int a=dwOldProtect;
+//        }
+        while (/*strcmp("WS2_32.dll",pszDllName)!=0 && */pThunk->u1.Function)
+        { 
+            printf("sizeof(pThunk->u1.Function=%d",(int)sizeof(pThunk->u1.Function));
+            printf("thunk_data.function(low 32 bit)=%lX\t",pThunk->u1.AddressOfData);//这里只打印了它的低32位
+            //这个64位数的低32位的最高位如果是1，按ordinal方式导入函数，低32位的最高位是0，按函数名导入。***************
+            if(pThunk->u1.AddressOfData & 0x80000000ull)
+            {//ordinal
+                
+            }
+            else
+            {
+                // 取得函数名称。hint/name 表项前2 个字节是函数序号，后面才是函数名称字符串
+                //char *pszFunName = (char *)((BYTE *)hMod + (DWORD)pThunk->u1.AddressOfData + 2);
+                IMAGE_IMPORT_BY_NAME *ibn = (IMAGE_IMPORT_BY_NAME *)((BYTE *)hMod + (DWORD)pThunk->u1.AddressOfData);
+                char *pszFunName = (char *)ibn->Name;//这个Name在头文件里面只有一个字节，但其实长度是不固定的，它存储的是一个字符串
+                printf("从此模块导入的函数：%-25s,", pszFunName);
+
+            }
+
+                // 取得函数地址。IAT 表就是一个DWORD 类型的数组，每个成员记录一个函数的地址
+                //PDWORD lpAddr = (DWORD *)((BYTE *)hMod + pImportDesc->FirstThunk) + n;
+                PULONG64 lpAddr = (PULONG64)((BYTE *)hMod + pImportDesc->FirstThunk) + n;
+                printf("函数地址:%llX\n", *lpAddr);
             n++;
             pThunk++;
         }
