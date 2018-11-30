@@ -30,6 +30,7 @@ int main()
 	{
 		return 0;
 	}
+	if(0)
 	{
 		HINSTANCE hinstLib; 
 		hinstLib = LoadLibrary(TEXT("hook_dll.dll")); 
@@ -98,7 +99,7 @@ int main()
 		}
 		closesocket(sclient);
 		Sleep(1000);
-		break;
+		//break;
 	}
 	WSACleanup();
 //	system("pause");
