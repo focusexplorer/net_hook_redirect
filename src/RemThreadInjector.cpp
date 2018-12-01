@@ -32,11 +32,15 @@ BOOL CRemThreadInjector::EnableDebugPrivilege(BOOL bEnable)
         tp.PrivilegeCount = 1;
         tp.Privileges[0].Luid = uID;
         tp.Privileges[0].Attributes = bEnable ? SE_PRIVILEGE_ENABLED : 0;
-        if(!::AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(tp), NULL, NULL))
+        ::AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(tp), NULL, NULL);
+        if(::GetLastError() == ERROR_SUCCESS)
         {
-            printf("try to adjust %d for privilege error\n",bEnable);
+            bOk=TRUE;
         }
-        bOk = (::GetLastError() == ERROR_SUCCESS);
+        else if(::GetLastError()==ERROR_NOT_ALL_ASSIGNED)
+        {
+            printf("the process do'not have the priliege, try run as administor\n");
+        }
         // 关闭访问令牌句柄
         ::CloseHandle(hToken);
     }
@@ -81,18 +85,23 @@ BOOL CRemThreadInjector::InjectModuleInto(DWORD dwProcessId)
     LPVOID lpRemoteDllName = ::VirtualAllocEx(hProcess,
                                               NULL, cbSize, MEM_COMMIT, PAGE_READWRITE);
     ::WriteProcessMemory(hProcess, lpRemoteDllName, m_szDllName, cbSize, NULL);
+    printf("dllname addr=%p\n",lpRemoteDllName);
     // 取得LoadLibraryA 函数的地址，我们将以它作为远程线程函数启动
     HMODULE hModule = ::GetModuleHandle("kernel32.dll");
-    LPTHREAD_START_ROUTINE pfnStartRoutine =
-        (LPTHREAD_START_ROUTINE)::GetProcAddress(hModule, "LoadLibraryA");
+    LPTHREAD_START_ROUTINE pfnStartRoutine = (LPTHREAD_START_ROUTINE)::GetProcAddress(hModule, "LoadLibraryA");
+  //  LPTHREAD_START_ROUTINE pfnStartRoutine = (LPTHREAD_START_ROUTINE)::GetProcAddress(hModule, "LoadLibraryW");
     // 启动远程线程
+    printf("start routine addr=%p\n",pfnStartRoutine);
+    printf("start create remote thread...\n");
     HANDLE hRemoteThread = ::CreateRemoteThread(hProcess,
                                                 NULL, 0, pfnStartRoutine, lpRemoteDllName, 0, NULL);
     if (hRemoteThread == NULL)
     {
+        printf("create remote thread error:%u\n",GetLastError());
         ::CloseHandle(hProcess);
         return FALSE;
     }
+    printf("remote thread id=%u\n",GetThreadId(hRemoteThread));
     // 等待目标线程运行结束，即LoadLibraryA 函数返回
     ::WaitForSingleObject(hRemoteThread, INFINITE);
     ::CloseHandle(hRemoteThread);
@@ -122,7 +131,11 @@ BOOL CRemThreadInjector::EjectModuleFrom(DWORD dwProcessId)
     ::CloseHandle(hModuleSnap);
     // 如果找不到就返回出错处理
     if (!bFound)
+    {
+        printf("can't find target module,may be the target-process hasn't loaded it \n");
         return FALSE;
+
+    }
     // 试图打开目标进程
     HANDLE hProcess = ::OpenProcess(
         PROCESS_VM_WRITE | PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION,

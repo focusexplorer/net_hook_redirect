@@ -44,7 +44,7 @@ int main()
 	}
 	sockaddr_in serAddr;
 	serAddr.sin_family = AF_INET;
-	serAddr.sin_port = htons(80);
+	serAddr.sin_port = htons(70);
 	 //inet_pton(AF_INET, "220.181.57.216", &serAddr.sin_addr);
 	inet_pton(AF_INET, "127.0.0.1", &serAddr.sin_addr);
     	while (true) 
@@ -59,7 +59,7 @@ int main()
 		{  
 			printf("connect error !\n");
 			closesocket(sclient);
-			break;
+			continue;
 		}
 		printf("connect success\n");
 		{
